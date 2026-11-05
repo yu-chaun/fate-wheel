@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>命運轉盤・糾結終結者</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:#2b2140;font:16px/1.6 -apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;background:linear-gradient(135deg,#ffe3f1,#e3e7ff 50%,#d9fff1)}
+main{max-width:960px;margin:0 auto;padding:22px 14px 50px}
+h1{text-align:center;margin:6px 0 2px;font-size:28px}
+.sub{text-align:center;margin:0 0 18px;color:#6b5f87}
+.app{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+@media(max-width:760px){.app{grid-template-columns:1fr}}
+.box{background:#fff;border-radius:20px;padding:16px;box-shadow:0 6px 24px rgba(90,60,160,.12)}
+.stage{position:relative;text-align:center}
+canvas{width:100%;max-width:440px;height:auto;display:block;margin:0 auto}
+.ptr{position:absolute;left:50%;top:-4px;transform:translateX(-50%);font-size:34px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));z-index:2}
+.go{margin-top:12px;border:0;border-radius:999px;padding:12px 40px;font-size:20px;font-weight:700;color:#fff;background:linear-gradient(135deg,#ff5fa2,#7a5cff);cursor:pointer;box-shadow:0 5px 0 #5a40c4}
+.go:active{transform:translateY(3px);box-shadow:0 2px 0 #5a40c4}.go:disabled{opacity:.6;cursor:wait}
+#res{min-height:56px;margin-top:12px;font-size:24px;font-weight:800;color:#d6246e}
+h2{font-size:16px;margin:0 0 8px}
+.pre{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pre button{border:1px solid #d8d0f0;background:#f7f4ff;border-radius:999px;padding:5px 11px;cursor:pointer;font-size:13px}
+.pre button:hover{background:#ece6ff}
+textarea{width:100%;height:170px;border:1px solid #d8d0f0;border-radius:12px;padding:10px;font:inherit;resize:vertical}
+.row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px}
+ol.h{margin:0;padding-left:20px;max-height:120px;overflow:auto;font-size:14px}
+.guide{margin-top:16px}.guide ol,.guide ul{margin:6px 0;padding-left:22px}
+.tag{display:inline-block;background:#ffe3f1;color:#d6246e;border-radius:6px;padding:0 6px;font-weight:700}
+.cf{position:fixed;top:-30px;font-size:26px;pointer-events:none;animation:f 2.2s ease-in forwards;z-index:9}
+@keyframes f{to{transform:translateY(105vh) rotate(540deg);opacity:.2}}
+footer{text-align:center;color:#6b5f87;font-size:13px;margin-top:18px}
+</style>
+</head>
+<body>
+<main>
+<h1>🎡 命運轉盤・糾結終結者</h1>
+<p class="sub">選擇困難？交給轉盤決定，吃什麼、誰請客、去哪玩，一轉就知道！</p>
+
+<div class="app">
+ <div class="box stage">
+  <div class="ptr">▼</div>
+  <canvas id="wheel" width="600" height="600"></canvas>
+  <button class="go" id="spin">開轉！</button>
+  <div id="res">按下「開轉」看看命運怎麼說</div>
+ </div>
+ <div>
+  <div class="box">
+   <h2>① 選一個主題，或自己寫選項</h2>
+   <div class="pre" id="pre"></div>
+   <textarea id="opts" spellcheck="false"></textarea>
+   <div class="row"><input type="checkbox" id="rm"><label for="rm">抽中後從轉盤移除（適合排順序、分組）</label></div>
+   <div class="row"><span>最多 24 個選項，一行一個</span></div>
+  </div>
+  <div class="box" style="margin-top:14px">
+   <h2>🕘 抽籤紀錄</h2>
+   <ol class="h" id="hist"><li style="list-style:none;margin-left:-20px;color:#999">還沒有紀錄</li></ol>
+  </div>
+ </div>
+</div>
+
+<div class="box guide">
+ <h2>📖 使用說明</h2>
+ <ol>
+  <li><b>選主題：</b>點上方的快速主題（今天吃什麼、誰請客…），選項會自動填入右邊的文字框。</li>
+  <li><b>自訂選項：</b>直接在文字框修改，<span class="tag">一行代表一個選項</span>，轉盤會即時更新。</li>
+  <li><b>開轉：</b>按下「開轉！」，等轉盤慢慢停下，箭頭 ▼ 指到的就是結果。</li>
+  <li><b>看紀錄：</b>每次的結果都會記在右下角，可以回頭看剛剛轉到什麼。</li>
+  <li><b>進階玩法：</b>勾選「抽中後從轉盤移除」，連續轉就能排出不重複的順序，例如報告上台順序。</li>
+ </ol>
+ <ul>
+  <li>至少要有 2 個選項才能轉。</li>
+  <li>結果是隨機產生的，純屬娛樂，重要決定還是要自己想清楚喔！</li>
+ </ul>
+</div>
+<footer>Made with ❤ 純前端網頁，不收集任何資料</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id),cv=$('wheel'),ctx=cv.getContext('2d');
+const PRE={'今天吃什麼':'火鍋\n拉麵\n便當\n滷肉飯\n牛肉麵\n炸雞\n壽司\n麥當勞','誰請客':'我\n你\n他\n她\n AA 制\n猜拳決定','週末去哪':'看電影\n逛夜市\n睡一整天\n去爬山\n找朋友打球\n咖啡廳讀書\n去海邊','真心話大冒險':'真心話\n大冒險\n喝一口水\n學動物叫\n唱一句歌\n跳過這輪','要不要讀書':'要！現在開始\n再滑 10 分鐘\n先洗澡再說\n只讀 25 分鐘\n明天一定','小組上台順序':'第 1 組\n第 2 組\n第 3 組\n第 4 組\n第 5 組\n第 6 組'};
+let ang=0,busy=false,hist=[];
+const pre=$('pre');
+Object.keys(PRE).forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{$('opts').value=PRE[k];$('res').textContent='按下「開轉」看看命運怎麼說';draw()};pre.appendChild(b)});
+$('opts').value=PRE['今天吃什麼'];
+const list=()=>$('opts').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,24);
+function draw(){
+ const o=list(),n=o.length,S=cv.width,c=S/2,r=c-10;ctx.clearRect(0,0,S,S);
+ if(n<2){ctx.fillStyle='#999';ctx.font='28px sans-serif';ctx.textAlign='center';ctx.fillText('請至少輸入 2 個選項',c,c);return}
+ const w=2*Math.PI/n;
+ for(let i=0;i<n;i++){
+  ctx.beginPath();ctx.moveTo(c,c);ctx.arc(c,c,r,ang+i*w,ang+(i+1)*w);ctx.closePath();
+  ctx.fillStyle=`hsl(${(i*360/n+(i%2?20:0))%360} 85% ${i%2?72:65}%)`;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();
+  ctx.save();ctx.translate(c,c);ctx.rotate(ang+(i+.5)*w);ctx.textAlign='right';ctx.fillStyle='#2b2140';
+  ctx.font=`bold ${n>14?20:n>8?25:30}px sans-serif`;let t=o[i];if(t.length>9)t=t.slice(0,8)+'…';ctx.fillText(t,r-20,10);ctx.restore();
+ }
+ ctx.beginPath();ctx.arc(c,c,34,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#7a5cff';ctx.lineWidth=6;ctx.stroke();
+}
+function confetti(){const e=['🎉','✨','🎊','⭐','💖'];for(let i=0;i<26;i++){const s=document.createElement('span');s.className='cf';s.textContent=e[i%5];s.style.left=Math.random()*100+'vw';s.style.animationDelay=Math.random()*.6+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),3200)}}
+function spin(){
+ const o=list();if(busy||o.length<2){if(o.length<2)$('res').textContent='選項不夠，至少要 2 個！';return}
+ busy=true;$('spin').disabled=true;$('res').textContent='轉轉轉…';
+ const from=ang,to=ang+2*Math.PI*(5+Math.random()*3)+Math.random()*2*Math.PI,D=4800,t0=performance.now();
+ (function f(t){const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,4);ang=from+(to-from)*e;draw();
+  if(p<1)return requestAnimationFrame(f);
+  const n=o.length,w=2*Math.PI/n,rel=((-Math.PI/2-ang)%(2*Math.PI)+2*Math.PI)%(2*Math.PI),idx=Math.floor(rel/w),win=o[idx];
+  $('res').textContent='🎯 '+win;confetti();hist.unshift(win);
+  $('hist').innerHTML=hist.slice(0,30).map(h=>'<li>'+h.replace(/</g,'&lt;')+'</li>').join('');
+  if($('rm').checked){o.splice(idx,1);$('opts').value=o.join('\n');if(o.length<2)$('res').textContent+='（選項用完了！）'}
+  busy=false;$('spin').disabled=false;draw();
+ })(t0);
+}
+$('spin').onclick=spin;$('opts').addEventListener('input',draw);cv.onclick=spin;draw();
+</script>
+</body>
+</html>
